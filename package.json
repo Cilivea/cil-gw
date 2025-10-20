@@ -9,6 +9,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "mqtt": "^5.14.1"
+    "mqtt": "^5.14.1",
+    "mqtt-pattern": "^2.1.0"
   }
 }
