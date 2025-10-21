@@ -4,6 +4,7 @@
     "": {
       "name": "cil-gw",
       "dependencies": {
+        "cilivea-value": "https://github.com/Cilivea/Cilivea-value",
         "mqtt": "^5.14.1",
         "mqtt-pattern": "^2.1.0",
       },
@@ -41,6 +42,8 @@
     "buffer-from": ["buffer-from@1.1.2", "", {}, "sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ=="],
 
     "bun-types": ["bun-types@1.3.0", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-u8X0thhx+yJ0KmkxuEo9HAtdfgCBaM/aI9K90VQcQioAmkVp3SG3FkwWGibUFz3WdXAdcsqOcbU40lK7tbHdkQ=="],
+
+    "cilivea-value": ["cilivea-value@github:Cilivea/Cilivea-value#666a7d1", { "peerDependencies": { "typescript": "^5" } }, "Cilivea-cilivea-value-666a7d1"],
 
     "commist": ["commist@3.2.0", "", {}, "sha512-4PIMoPniho+LqXmpS5d3NuGYncG6XWlkBSVGiWycL22dd42OYdUGil2CWuzklaJoNxyxUSpO4MKIBU94viWNAw=="],
 

@@ -1,6 +1,7 @@
 import { connect, MqttClient } from "mqtt"
 import { exec } from "mqtt-pattern"
-import type { BlockValue, BlockValueReceiveCallback, ClientOpts, GatewayValueReceiveCallback } from "../types"
+import type { BlockValueReceiveCallback, ClientOpts, GatewayValueReceiveCallback } from "../types"
+import { Value, type ValueType } from "cilivea-value"
 
 export class Client {
     client: MqttClient
@@ -28,9 +29,11 @@ export class Client {
         })
 
         this.client.on("message", (topic, payload) => {
+            let p = Value.deserialize(payload.toString())
+
             let block_params = exec("gateway/+/blocks/+id/+name/down", topic)
             if (block_params !== null) {
-                let p = JSON.parse(payload.toString())
+
                 for (let callback of this.block_callbacks) {
                     callback(this.id, block_params.id, block_params.name, p)
                 }
@@ -39,7 +42,6 @@ export class Client {
 
             let gateway_params = exec("gateway/+/values/+name/down", topic)
             if (gateway_params !== null) {
-                let p = JSON.parse(payload.toString())
                 for (let callback of this.gateway_callbacks) {
                     callback(this.id, gateway_params.name, p)
                 }
@@ -48,16 +50,16 @@ export class Client {
         })
     }
 
-    send_block_value(block_id: string, value_name: string, block_value: BlockValue, qos: 0 | 1 | 2 = 0) {
-        this.client.publish(`gateway/${this.id}/blocks/${block_id}/${value_name}/up`, JSON.stringify(block_value), { qos: qos }, () => { })
+    send_block_value(block_id: string, value_name: string, block_value: ValueType, qos: 0 | 1 | 2 = 0) {
+        this.client.publish(`gateway/${this.id}/blocks/${block_id}/${value_name}/up`, Value.serialize(block_value), { qos: qos }, () => { })
     }
 
     on_block_value_received(fn: BlockValueReceiveCallback) {
         this.block_callbacks.push(fn)
     }
 
-    send_gateway_value(value_name: string, value: BlockValue) {
-        this.client.publish(`gateway/${this.id}/values/${value_name}/up`, JSON.stringify(value))
+    send_gateway_value(value_name: string, value: ValueType) {
+        this.client.publish(`gateway/${this.id}/values/${value_name}/up`, Value.serialize(value))
     }
 
     on_gateway_value_received(fn: GatewayValueReceiveCallback) {

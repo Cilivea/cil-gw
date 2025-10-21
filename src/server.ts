@@ -1,6 +1,7 @@
 import { connect, MqttClient } from "mqtt"
 import { exec } from "mqtt-pattern"
-import type { BlockValue, BlockValueReceiveCallback, GatewayValueReceiveCallback, ServerOpts } from "../types"
+import type { BlockValueReceiveCallback, GatewayValueReceiveCallback, ServerOpts } from "../types"
+import { Value, type ValueType } from "cilivea-value"
 
 
 export class Server {
@@ -19,9 +20,9 @@ export class Server {
         })
 
         this.client.on("message", (topic, payload) => {
+            let p = Value.deserialize(payload.toString())
             let block_params = exec("gateway/+gw/blocks/+id/+name/up", topic)
             if (block_params !== null) {
-                let p = JSON.parse(payload.toString())
                 for (let callback of this.block_callbacks) {
                     callback(block_params.gw, block_params.id, block_params.name, p)
                 }
@@ -30,7 +31,6 @@ export class Server {
 
             let gateway_params = exec("gateway/+id/values/+name/up", topic)
             if (gateway_params !== null) {
-                let p = JSON.parse(payload.toString())
                 for (let callback of this.gateway_callbacks) {
                     callback(gateway_params.id, gateway_params.name, p)
                 }
@@ -39,16 +39,16 @@ export class Server {
         })
     }
 
-    send_block_value(gateway_id: string, block_id: string, value_name: string, block_value: BlockValue, qos: 0 | 1 | 2 = 0) {
-        this.client.publish(`gateway/${gateway_id}/blocks/${block_id}/${value_name}/down`, JSON.stringify(block_value), { qos: qos }, () => { })
+    send_block_value(gateway_id: string, block_id: string, value_name: string, block_value: ValueType, qos: 0 | 1 | 2 = 0) {
+        this.client.publish(`gateway/${gateway_id}/blocks/${block_id}/${value_name}/down`, Value.serialize(block_value), { qos: qos }, () => { })
     }
 
     on_block_value_received(fn: BlockValueReceiveCallback) {
         this.block_callbacks.push(fn)
     }
 
-    send_gateway_value(gateway_id: string, value_name: string, value: BlockValue) {
-        this.client.publish(`gateway/${gateway_id}/values/${value_name}/down`, JSON.stringify(value))
+    send_gateway_value(gateway_id: string, value_name: string, value: ValueType) {
+        this.client.publish(`gateway/${gateway_id}/values/${value_name}/down`, Value.serialize(value))
     }
 
     on_gateway_value_received(fn: GatewayValueReceiveCallback) {
