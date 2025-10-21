@@ -2,9 +2,6 @@ import { connect, MqttClient } from "mqtt"
 import { exec } from "mqtt-pattern"
 import type { BlockValue, BlockValueReceiveCallback, ClientOpts, GatewayValueReceiveCallback } from "../types"
 
-
-
-
 export class Client {
     client: MqttClient
     id: string
@@ -12,8 +9,14 @@ export class Client {
     block_callbacks: BlockValueReceiveCallback[] = []
     gateway_callbacks: GatewayValueReceiveCallback[] = []
     constructor(server_host: string, server_port: number, id: string, opts?: ClientOpts) {
-        this.client = connect(server_host, { port: server_port, clientId: id })
         this.id = id
+        this.client = connect(server_host, {
+            port: server_port, clientId: id, will: {
+                topic: `gateway/${this.id}/values/status`,
+                payload: "false",
+                qos: 2,
+            }
+        })
 
         this.client.on("connect", () => {
             this.send_gateway_value("status", true)
