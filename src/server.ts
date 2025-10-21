@@ -10,7 +10,6 @@ export class Server {
     block_callbacks: BlockValueReceiveCallback[] = []
     gateway_callbacks: GatewayValueReceiveCallback[] = []
     constructor(server_host: string, server_port: number, opts?: ServerOpts) {
-
         this.client = connect(server_host, { port: server_port, clientId: "Server" })
 
         this.client.on("connect", () => {
@@ -20,20 +19,21 @@ export class Server {
         })
 
         this.client.on("message", (topic, payload) => {
-            let p = Value.deserialize(payload.toString())
+            let deserialized_value = Value.deserialize(payload.toString())
+
             let block_params = exec("gateway/+gw/blocks/+id/+name/up", topic)
             if (block_params !== null) {
-                for (let callback of this.block_callbacks) {
-                    callback(block_params.gw, block_params.id, block_params.name, p)
-                }
+                this.block_callbacks.forEach(cb =>
+                    cb(block_params.gw, block_params.id, block_params.name, deserialized_value)
+                )
                 return
             }
 
             let gateway_params = exec("gateway/+id/values/+name/up", topic)
             if (gateway_params !== null) {
-                for (let callback of this.gateway_callbacks) {
-                    callback(gateway_params.id, gateway_params.name, p)
-                }
+                this.gateway_callbacks.forEach(cb =>
+                    cb(gateway_params.id, gateway_params.name, deserialized_value)
+                )
                 return
             }
         })

@@ -29,22 +29,21 @@ export class Client {
         })
 
         this.client.on("message", (topic, payload) => {
-            let p = Value.deserialize(payload.toString())
+            let deserialized_value = Value.deserialize(payload.toString())
 
             let block_params = exec("gateway/+/blocks/+id/+name/down", topic)
             if (block_params !== null) {
-
-                for (let callback of this.block_callbacks) {
-                    callback(this.id, block_params.id, block_params.name, p)
-                }
+                this.block_callbacks.forEach(cb =>
+                    cb(this.id, block_params.id, block_params.name, deserialized_value)
+                )
                 return
             }
 
             let gateway_params = exec("gateway/+/values/+name/down", topic)
             if (gateway_params !== null) {
-                for (let callback of this.gateway_callbacks) {
-                    callback(this.id, gateway_params.name, p)
-                }
+                this.gateway_callbacks.forEach(cb =>
+                    cb(this.id, gateway_params.name, deserialized_value)
+                )
                 return
             }
         })
