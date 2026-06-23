@@ -1,67 +1,92 @@
-import { connect, MqttClient } from "mqtt"
-import { exec } from "mqtt-pattern"
-import type { BlockValueReceiveCallback, ClientOpts, GatewayValueReceiveCallback } from "../types"
-import { Value, type ValueType } from "cilivea-value"
+import { connect, MqttClient } from "mqtt";
+import { exec } from "mqtt-pattern";
+import type {
+    BlockValueReceiveCallback,
+    ClientOpts,
+    BlockMetaReceiveCallback,
+} from "../types";
+import { Value, type BlockMeta, type ValueType } from "cilivea-value";
+
+import { getLogger } from "@logtape/logtape";
+
+const log = getLogger(["CIL/GW", "server"]);
 
 export class Client {
-    client: MqttClient
-    id: string
+    client: MqttClient;
+    id: string;
 
-    block_callbacks: BlockValueReceiveCallback[] = []
-    gateway_callbacks: GatewayValueReceiveCallback[] = []
-    constructor(server_host: string, server_port: number, id: string, opts?: ClientOpts) {
-        this.id = id
+    value_callbacks: BlockValueReceiveCallback[] = [];
+    meta_callbacks: BlockMetaReceiveCallback[] = [];
+    constructor(
+        server_host: string,
+        server_port: number,
+        id: string,
+        opts?: ClientOpts,
+    ) {
+        this.id = id;
         this.client = connect(server_host, {
-            port: server_port, clientId: id, will: {
-                topic: `gateway/${this.id}/values/status`,
+            port: server_port,
+            clientId: id,
+            will: {
+                topic: `block/${this.id}/value/up`,
                 payload: "false",
                 qos: 2,
-            }
-        })
+            },
+        });
 
         this.client.on("connect", () => {
-            this.send_gateway_value("status", true)
-
-            console.log("connected client")
-            this.client.subscribe("gateway/+/blocks/+/+/down")
-            this.client.subscribe("gateway/+/values/+/down")
-
-        })
+            log.info("client connected");
+            this.client.subscribe("blocks/+/+/down");
+        });
 
         this.client.on("message", (topic, payload) => {
-            let deserialized_value = Value.deserialize(payload.toString())
+            let block_params = exec("blocks/+id/+type/up", topic);
 
-            let block_params = exec("gateway/+/blocks/+id/+name/down", topic)
-            if (block_params !== null) {
-                this.block_callbacks.forEach(cb =>
-                    cb(this.id, block_params.id, block_params.name, deserialized_value)
-                )
-                return
-            }
+            if (block_params === null) return;
 
-            let gateway_params = exec("gateway/+/values/+name/down", topic)
-            if (gateway_params !== null) {
-                this.gateway_callbacks.forEach(cb =>
-                    cb(this.id, gateway_params.name, deserialized_value)
-                )
-                return
+            if (block_params.type === "value") {
+                let deserialized_value = Value.deserialize(payload.toString());
+                this.value_callbacks.forEach((cb) =>
+                    cb(block_params.id, deserialized_value),
+                );
+
+                return;
+            } else if (block_params.type === "meta") {
+                let deserialized_value = JSON.parse(payload.toString());
+                this.value_callbacks.forEach((cb) =>
+                    cb(block_params.id, deserialized_value),
+                );
             }
-        })
+        });
     }
 
-    send_block_value(block_id: string, value_name: string, block_value: ValueType, qos: 0 | 1 | 2 = 0) {
-        this.client.publish(`gateway/${this.id}/blocks/${block_id}/${value_name}/up`, Value.serialize(block_value), { qos: qos }, () => { })
+    send_block_value(
+        block_id: string,
+        block_value: ValueType,
+        qos: 0 | 1 | 2 = 0,
+    ) {
+        this.client.publish(
+            `blocks/${block_id}/value/down`,
+            Value.serialize(block_value),
+            { qos: qos },
+            () => {},
+        );
     }
 
     on_block_value_received(fn: BlockValueReceiveCallback) {
-        this.block_callbacks.push(fn)
+        this.value_callbacks.push(fn);
     }
 
-    send_gateway_value(value_name: string, value: ValueType) {
-        this.client.publish(`gateway/${this.id}/values/${value_name}/up`, Value.serialize(value))
+    send_block_meta(block_id: string, value: BlockMeta, qos: 0 | 1 | 2 = 0) {
+        this.client.publish(
+            `blocks/${block_id}/value/down`,
+            JSON.stringify(value),
+            { qos: qos },
+            () => {},
+        );
     }
 
-    on_gateway_value_received(fn: GatewayValueReceiveCallback) {
-        this.gateway_callbacks.push(fn)
+    on_block_meta_received(fn: BlockMetaReceiveCallback) {
+        this.meta_callbacks.push(fn);
     }
 }

@@ -1,17 +1,18 @@
 {
-    "name": "cil-gw",
-    "module": "index.ts",
-    "type": "module",
-    "version": "0.0.1",
-    "devDependencies": {
-        "@types/bun": "latest"
-    },
-    "peerDependencies": {
-        "typescript": "^5"
-    },
-    "dependencies": {
-        "cilivea-value": "https://github.com/Cilivea/Cilivea-value",
-        "mqtt": "^5.14.1",
-        "mqtt-pattern": "^2.1.0"
-    }
+  "name": "@cilivea/cil-gw",
+  "module": "index.ts",
+  "type": "module",
+  "version": "0.0.1",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@cilivea/cilivea-value": "workspace:*",
+    "@logtape/logtape": "^2.1.1",
+    "mqtt": "^5.14.1",
+    "mqtt-pattern": "^2.1.0"
+  }
 }
